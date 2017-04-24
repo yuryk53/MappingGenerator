@@ -20,17 +20,51 @@ namespace MappingGenerator
     class DBSemanticsGenerator
     {
         string connString = @"Data Source=ASUS\SQLEXPRESS;Initial Catalog=LMS;Integrated Security=True";
+        Dictionary<string, string> sqlToXSDMappings = new Dictionary<string, string>();
 
         public DBSemanticsGenerator(string connectionString)
         {
             this.connString = connectionString;
+            Initialize();
+        }
+
+        private void Initialize()
+        {
+            sqlToXSDMappings.Add("bigint", "long");
+            sqlToXSDMappings.Add("binary", "base64Binary");
+            sqlToXSDMappings.Add("bit", "boolean");
+            sqlToXSDMappings.Add("char", "string");
+            sqlToXSDMappings.Add("datetime", "dateTime");
+            sqlToXSDMappings.Add("decimal", "decimal");
+            sqlToXSDMappings.Add("float", "double");
+            sqlToXSDMappings.Add("image", "base64Binary");
+            sqlToXSDMappings.Add("int", "int");
+            sqlToXSDMappings.Add("money", "decimal");
+            sqlToXSDMappings.Add("nchar", "string");
+            sqlToXSDMappings.Add("ntext", "string");
+            sqlToXSDMappings.Add("nvarchar", "string");
+            sqlToXSDMappings.Add("numeric", "decimal");
+            sqlToXSDMappings.Add("real", "float");
+            sqlToXSDMappings.Add("smalldatetime", "dateTime");
+            sqlToXSDMappings.Add("smallint", "short");
+            sqlToXSDMappings.Add("smallmoney", "decimal");
+            sqlToXSDMappings.Add("sql_variant", "string");
+            sqlToXSDMappings.Add("sysname", "string");
+            sqlToXSDMappings.Add("text", "string");
+            sqlToXSDMappings.Add("timestamp", "dateTime");
+            sqlToXSDMappings.Add("tinyint", "unsignedByte");
+            sqlToXSDMappings.Add("varbinary", "base64Binary");
+            sqlToXSDMappings.Add("varchar", "string");
+            sqlToXSDMappings.Add("uniqueidentifier", "string");
+            sqlToXSDMappings.Add("varcharmax", "string");
+            sqlToXSDMappings.Add("date", "date");
         }
 
         //for each of the tables make owl:Class with fields as owl:ObjectProperty or owl:DataProperty
-        public IGraph GenerateOntologyFromDB(string dbName, string dbNamespace, string ontologyName)
+        public IGraph GenerateOntologyFromDB(string dbName, string dbNamespace, string ontologyName, bool includeViews=false)
         {
             DBLoader dbLoader = new DBLoader(connString);
-            List<string> tableNames = dbLoader.GetTableNames();
+            List<string> tableNames = dbLoader.GetTableNames(includeViews);
             List<string> nmTableNames = new List<string>();
             //referenced tables = ObjectProperty (FK fields)
             //other fields = DataProperty
@@ -82,7 +116,8 @@ namespace MappingGenerator
                 foreach (string dataColumn in dataColumns)
                 {
                     //newClass.AddLiteralProperty($"{tableUri}/{dataColumn}", g.CreateLiteralNode(dataColumn), true);
-                    owlWriter.EmitSimpleDataTypeProp(sb, $"{tableUri}#{dataColumn}");
+                    string xsdType = ConvertNativeToXsdDataType(GetTableAttributeDataType(dbName, tableName, dataColumn));
+                    owlWriter.EmitSimpleDataTypeProp(sb, $"{tableUri}#{dataColumn}", tableUri, xsdType);
                 }
 
                 foreach(string objectColumn in objectColumns)
@@ -99,6 +134,7 @@ namespace MappingGenerator
             }
 
             //process n:m tables
+            //all n:m tables we should present as Object Properties, where domain='PK1 table' and range='PK2 table'
             foreach(var tableName in nmTableNames)
             {
                 string tableUri = ComposeTableUri(globalUri, tableName);
@@ -132,6 +168,44 @@ namespace MappingGenerator
                 return matches[0].Groups[0].Value;
             }
             else throw new ArgumentException($"String ' {uri} ' does not contain a valid uri!");
+        }
+
+        public string GetTableAttributeDataType(string dbName, string tableName, string columnName)
+        {
+            SqlConnection sqlConnection = new SqlConnection(connString);
+            //build a "serverConnection" with the information of the "sqlConnection"
+            ServerConnection serverConnection = new ServerConnection(sqlConnection);
+
+            //The "serverConnection is used in the ctor of the Server.
+            Server server = new Server(serverConnection);
+            Database db = server.Databases[dbName];
+
+            Table tbl = db.Tables[tableName];
+            string sqlDataType = string.Empty;
+            if (tbl == null) // possibly a view
+            {
+                View view = db.Views[tableName];
+
+                if (view == null)
+                    throw new Exception($"No such table or view '{tableName}'");
+
+                sqlDataType = view.Columns[columnName].DataType.SqlDataType.ToString();
+            }
+            else
+            {
+                sqlDataType = tbl.Columns[columnName].DataType.SqlDataType.ToString();
+            }
+
+            return sqlDataType.ToLower();
+        }
+
+        public string ConvertNativeToXsdDataType(string sqlType)
+        {
+            if (sqlToXSDMappings.ContainsKey(sqlType))
+            {
+                return sqlToXSDMappings[sqlType];
+            }
+            else throw new ArgumentOutOfRangeException($"Sql type '{sqlType}' was not found in SQL-XSD mapping!");
         }
 
         public bool HasForeignKeyConstraints(string dbName, string tableName)
