@@ -49,11 +49,14 @@ namespace MappingGenerator
             else throw new ArgumentException("Invalid rdf:about uri in owl:class description!");
         }
 
-        public void EmitSimpleDataTypeProp(StringBuilder sb, string rdfAboutUri)
+        public void EmitSimpleDataTypeProp(StringBuilder sb, string rdfAboutUri, string domainResourceUri, string rangeXSDType)
         {
             if (MatchUri(rdfAboutUri))
             {
-                sb.AppendLine($"<owl:DataTypeProperty rdf:about=\"{rdfAboutUri}\" />");
+                sb.AppendLine($"<owl:DataTypeProperty rdf:about=\"{rdfAboutUri}\">");
+                sb.AppendLine($"\t<rdfs:domain rdf:resource=\"{domainResourceUri}\" />");
+                sb.AppendLine($"\t<rdfs:range rdf:resource=\"xsd:{rangeXSDType}\" />");
+                sb.AppendLine("</owl:DataTypeProperty>");
             }
             else throw new ArgumentException("Invalid rdf:about URI!");
         }
