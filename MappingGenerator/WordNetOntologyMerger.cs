@@ -270,9 +270,18 @@ namespace MappingGenerator
                         //if callback function was not provided or we are allowed to merge classes -> merge them
                         OntologyClass federatedClass = _merged.CreateOntologyClass(new Uri(federatedUri)); //check federatedClassName to a URI!!!
 
+
+                        OntologyClass oclass1 = _merged.AllClasses.Where(oclass => oclass.Resource.ToString() == mergedClassPair.ObjectName1).First();
+                        federatedClass.AddSubClass(oclass1);
+                        OntologyClass oclass2 = _merged.AllClasses.Where(oclass => oclass.Resource.ToString() == mergedClassPair.ObjectName2).First();
+                        federatedClass.AddSubClass(oclass2);
+
                         //everything's OK -> add current federated property to ontology graph
                         OntologyResource ontologyClassResource = _merged.CreateOntologyResource(new Uri(OntologyHelper.OwlClass));
+                        
                         federatedClass.AddType(ontologyClassResource);
+                       
+                        
 
 
                         //now obtain all merged classes' properties for merging, give them federated URIs and merge them
@@ -326,12 +335,12 @@ namespace MappingGenerator
                                         federatedProperty.AddEquivalentProperty(new Uri(mergePropertyPair.ObjectName1));
                                         federatedProperty.AddEquivalentProperty(new Uri(mergePropertyPair.ObjectName2));
                                     }
-                                    if (mergePropertyPair.MergePropRelation == MergePropertyRelation.SubProperty)
-                                    {
-                                        federatedProperty.AddSubProperty(new Uri(mergePropertyPair.ObjectName1));   //!!!!!! спорная ситуация
-                                        federatedProperty.AddSubProperty(new Uri(mergePropertyPair.ObjectName2));   //!!!!!! спорная ситуация
-                                    }
-                                    
+
+                                    INode oprop1 = _merged.Nodes.Where(node=>node.ToString()==mergePropertyPair.ObjectName1).First(); //!!!!!! спорная ситуация
+                                    federatedProperty.AddSubProperty(_merged.CreateOntologyProperty(oprop1));
+                                    INode oprop2 = _merged.Nodes.Where(node => node.ToString() == mergePropertyPair.ObjectName2).First(); //!!!!!! спорная ситуация
+                                    federatedProperty.AddSubProperty(_merged.CreateOntologyProperty(oprop2));
+
                                     //to specify domain and range we should MERGE THE DATATYPES!!!
 
                                     var prop01Range = _o1.GetTriplesWithSubjectPredicate(_o1.CreateUriNode(new Uri(mergePropertyPair.ObjectName1)), _o1.CreateUriNode("rdfs:range")).ToList();
