@@ -26,7 +26,7 @@ namespace MappingGenerator
             this.connString = connString;
         }
 
-        public List<string> GetTableNames()
+        public List<string> GetTableNames(bool includeViews = false)
         {
             List<string> tables = new List<string>();
 
@@ -37,6 +37,15 @@ namespace MappingGenerator
                 foreach (DataRow row in schema.Rows)
                 {
                     tables.Add((string)row[2]);
+                }
+
+                if (!includeViews)
+                {
+                    schema = conn.GetSchema("Views");
+                    foreach (DataRow row in schema.Rows)
+                    {
+                        tables.Remove((string)row[2]);
+                    }
                 }
             }
             tables.Remove("sysdiagrams");
