@@ -115,6 +115,7 @@
     <Compile Include="IOntologyMerger.cs" />
     <Compile Include="ITypeCaster.cs" />
     <Compile Include="ShortestFederatedNamesGenerator.cs" />
+    <Compile Include="SqlToXsdDtMapper.cs" />
     <Compile Include="WordNetOntologyMerger.cs" />
     <Compile Include="OWLWriter.cs" />
     <Compile Include="Program.cs" />

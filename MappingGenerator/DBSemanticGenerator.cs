@@ -20,44 +20,44 @@ namespace MappingGenerator
     class DBSemanticsGenerator
     {
         string connString = @"Data Source=ASUS\SQLEXPRESS;Initial Catalog=LMS;Integrated Security=True";
-        Dictionary<string, string> sqlToXSDMappings = new Dictionary<string, string>();
+        Dictionary<string, string> sqlToXSDMappings = SqlToXsdDtMapper.sqlToXSDMappings;   //moved to SqlToXsdDtMapper static class
 
         public DBSemanticsGenerator(string connectionString)
         {
             this.connString = connectionString;
-            Initialize();
+            //Initialize();
         }
 
         private void Initialize()
         {
-            sqlToXSDMappings.Add("bigint", "long");
-            sqlToXSDMappings.Add("binary", "base64Binary");
-            sqlToXSDMappings.Add("bit", "boolean");
-            sqlToXSDMappings.Add("char", "string");
-            sqlToXSDMappings.Add("datetime", "dateTime");
-            sqlToXSDMappings.Add("decimal", "decimal");
-            sqlToXSDMappings.Add("float", "double");
-            sqlToXSDMappings.Add("image", "base64Binary");
-            sqlToXSDMappings.Add("int", "int");
-            sqlToXSDMappings.Add("money", "decimal");
-            sqlToXSDMappings.Add("nchar", "string");
-            sqlToXSDMappings.Add("ntext", "string");
-            sqlToXSDMappings.Add("nvarchar", "string");
-            sqlToXSDMappings.Add("numeric", "decimal");
-            sqlToXSDMappings.Add("real", "float");
-            sqlToXSDMappings.Add("smalldatetime", "dateTime");
-            sqlToXSDMappings.Add("smallint", "short");
-            sqlToXSDMappings.Add("smallmoney", "decimal");
-            sqlToXSDMappings.Add("sql_variant", "string");
-            sqlToXSDMappings.Add("sysname", "string");
-            sqlToXSDMappings.Add("text", "string");
-            sqlToXSDMappings.Add("timestamp", "dateTime");
-            sqlToXSDMappings.Add("tinyint", "unsignedByte");
-            sqlToXSDMappings.Add("varbinary", "base64Binary");
-            sqlToXSDMappings.Add("varchar", "string");
-            sqlToXSDMappings.Add("uniqueidentifier", "string");
-            sqlToXSDMappings.Add("varcharmax", "string");
-            sqlToXSDMappings.Add("date", "date");
+            //sqlToXSDMappings.Add("bigint", "long");
+            //sqlToXSDMappings.Add("binary", "base64Binary");
+            //sqlToXSDMappings.Add("bit", "boolean");
+            //sqlToXSDMappings.Add("char", "string");
+            //sqlToXSDMappings.Add("datetime", "dateTime");
+            //sqlToXSDMappings.Add("decimal", "decimal");
+            //sqlToXSDMappings.Add("float", "double");
+            //sqlToXSDMappings.Add("image", "base64Binary");
+            //sqlToXSDMappings.Add("int", "int");
+            //sqlToXSDMappings.Add("money", "decimal");
+            //sqlToXSDMappings.Add("nchar", "string");
+            //sqlToXSDMappings.Add("ntext", "string");
+            //sqlToXSDMappings.Add("nvarchar", "string");
+            //sqlToXSDMappings.Add("numeric", "decimal");
+            //sqlToXSDMappings.Add("real", "float");
+            //sqlToXSDMappings.Add("smalldatetime", "dateTime");
+            //sqlToXSDMappings.Add("smallint", "short");
+            //sqlToXSDMappings.Add("smallmoney", "decimal");
+            //sqlToXSDMappings.Add("sql_variant", "string");
+            //sqlToXSDMappings.Add("sysname", "string");
+            //sqlToXSDMappings.Add("text", "string");
+            //sqlToXSDMappings.Add("timestamp", "dateTime");
+            //sqlToXSDMappings.Add("tinyint", "unsignedByte");
+            //sqlToXSDMappings.Add("varbinary", "base64Binary");
+            //sqlToXSDMappings.Add("varchar", "string");
+            //sqlToXSDMappings.Add("uniqueidentifier", "string");
+            //sqlToXSDMappings.Add("varcharmax", "string");
+            //sqlToXSDMappings.Add("date", "date");
         }
 
         //for each of the tables make owl:Class with fields as owl:ObjectProperty or owl:DataProperty
@@ -98,7 +98,7 @@ namespace MappingGenerator
                     }
                 }
 
-                string tableUri = globalUri.Remove(globalUri.LastIndexOf('"')) + tableName;
+                string tableUri = ComposeTableUri(globalUri, tableName);//globalUri.Remove(globalUri.LastIndexOf('"')) + tableName;
                 //OntologyClass newClass = g.CreateOntologyClass(new Uri(tableUri));
                 owlWriter.EmitSimpleOWLClass(sb, tableUri);
 
@@ -123,7 +123,7 @@ namespace MappingGenerator
                 foreach(string objectColumn in objectColumns)
                 {
                     string referencedTable = GetReferencedTableName(dbName, tableName, objectColumn);
-                    string refTableUri = globalUri.Remove(globalUri.LastIndexOf('"')) + referencedTable;
+                    string refTableUri = ComposeTableUri(globalUri, referencedTable);//globalUri.Remove(globalUri.LastIndexOf('"')) + referencedTable;
                     owlWriter.EmitSimpleObjectProp(sb, $"{tableUri}#{objectColumn}", tableUri, refTableUri);
                 }
 
@@ -137,10 +137,11 @@ namespace MappingGenerator
             //all n:m tables we should present as Object Properties, where domain='PK1 table' and range='PK2 table'
             foreach(var tableName in nmTableNames)
             {
-                string tableUri = ComposeTableUri(globalUri, tableName);
+                //string tableUri = ComposeTableUri(globalUri, tableName);
                 List<string> PKs = GetPrimaryKeys(dbName, tableName);
                 string tableN = GetReferencedTableName(dbName, tableName, PKs[0]);
                 string tableM = GetReferencedTableName(dbName, tableName, PKs[1]);
+                string tableUri = $"{ComposeTableUri(globalUri, tableN)}#{tableName}";   //where tableN - domain table
                 //table N = domain (or vice versa)
                 //table M = range (or vice versa)
                 owlWriter.EmitSimpleObjectProp(sb, tableUri, ComposeTableUri(globalUri, tableN), ComposeTableUri(globalUri, tableM));
@@ -155,13 +156,13 @@ namespace MappingGenerator
 
         private string ComposeTableUri(string globalUri, string tableName)
         {
-            return globalUri.Remove(globalUri.LastIndexOf('"')) + tableName;
+            return $"{globalUri}{tableName}"; //globalUri.Remove(globalUri.LastIndexOf('"')) + tableName;
         }
 
         private string MatchUri(string uri)
         {
             uri = uri.Replace(" ", "");
-            Regex r = new Regex(@"http\w{0,1}://.+");
+            Regex r = new Regex(@"http\w{0,1}://.+/");
             if (r.IsMatch(uri))
             {
                 MatchCollection matches = r.Matches(uri);

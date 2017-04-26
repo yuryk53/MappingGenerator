@@ -16,16 +16,16 @@ namespace MappingGenerator
     {
         static void Main(string[] args)
         {
-            //DBSemanticsGenerator generator = new DBSemanticsGenerator(@"Data Source=ASUS\SQLEXPRESS;Initial Catalog=LMSv1;Integrated Security=True");
-            //generator.GenerateOntologyFromDB("LMSv1", "xmlns: lms =\"http://www.example.org/LMS/\"", "LMSv1.owl");
+            //DBSemanticsGenerator generator = new DBSemanticsGenerator(@"Data Source=ASUS\SQLEXPRESS;Initial Catalog=LMS;Integrated Security=True");
+            //generator.GenerateOntologyFromDB("LMS", "xmlns: lms =\"http://www.example.org/LMS/\"", "LMS.owl");
             OntologyGraph gLMS = new OntologyGraph();
-            gLMS.LoadFromFile("LMSv1.owl");
+            gLMS.LoadFromFile("LMS.owl");
             //gLMS.SaveToFile("LMS_dotNetRdf.owl");
 
-            //generator = new DBSemanticsGenerator(@"Data Source=ASUS\SQLEXPRESS;Initial Catalog=KMSv1;Integrated Security=True");
-            //generator.GenerateOntologyFromDB("KMSv1", "xmlns: kms =\"http://www.example.org/KMS/\"", "KMSv1.owl");
+            //generator = new DBSemanticsGenerator(@"Data Source=ASUS\SQLEXPRESS;Initial Catalog=KMS;Integrated Security=True");
+            //generator.GenerateOntologyFromDB("KMS", "xmlns: kms =\"http://www.example.org/KMS/\"", "KMS.owl");
             OntologyGraph gKMS = new OntologyGraph();
-            gKMS.LoadFromFile("KMSv1.owl");
+            gKMS.LoadFromFile("KMS.owl");
             //gLMS.SaveToFile("KMS_dotNetRdf.owl");
 
             TryMergeOntologies(gLMS, gKMS);
@@ -71,11 +71,35 @@ namespace MappingGenerator
 
             IInteractiveMerger interactiveMerger = merger as IInteractiveMerger;
             interactiveMerger.MergeOntologyClasses(similarClasses,
-                simPair => true,
-                propPair => true,
+                AskUserIfCanMerge,
+                AskUserIfCanMerge,
                 0.6,
                 new ShortestFederatedNamesGenerator(),
                 new XSDTypeCaster());
+        }
+
+        static bool AskUserIfCanMerge(SimilarClassPropertyDescription simDescr)
+        {
+            if(simDescr.MergeClassRelation != MergeClassRelation.NotApplicable) //it's a class
+            {
+                Console.WriteLine($"Can we merge classes:\n{simDescr.ObjectName1}\n{simDescr.ObjectName2}\n(Y\\N)>");
+            }
+            else
+            {
+                Console.WriteLine($"Can we merge properties:\n{simDescr.ObjectName1}\n{simDescr.ObjectName2}\n(Y\\N)>");
+            }
+
+            ConsoleKeyInfo key = Console.ReadKey();
+            if (key.KeyChar == 'Y')
+            {
+                Console.WriteLine("\n");
+                return true;
+            }
+            else {
+                Console.WriteLine("\n");
+                return false;
+            }
+
         }
 
         static void PrintSimilaritiesIntoFile(string fname, Dictionary<string, List<SimilarClassPropertyDescription>> simDict)
