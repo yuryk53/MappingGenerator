@@ -17,7 +17,7 @@ using System.Text.RegularExpressions;
 
 namespace MappingGenerator
 {
-    class DBSemanticsGenerator
+    public class DBSemanticsGenerator
     {
         string connString = @"Data Source=ASUS\SQLEXPRESS;Initial Catalog=LMS;Integrated Security=True";
         Dictionary<string, string> sqlToXSDMappings = SqlToXsdDtMapper.sqlToXSDMappings;   //moved to SqlToXsdDtMapper static class
@@ -150,6 +150,8 @@ namespace MappingGenerator
 
             owlWriter.WriteFooter(sb);
             File.WriteAllText(Path.Combine(Environment.CurrentDirectory, ontologyName), sb.ToString());
+
+            g.LoadFromString(sb.ToString(), new VDS.RDF.Parsing.RdfXmlParser());
 
             return g;
         }
