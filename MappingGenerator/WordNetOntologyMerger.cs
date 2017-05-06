@@ -244,22 +244,21 @@ namespace MappingGenerator
                         //merge using rdfs:subClassOf (traverse all merged classes and add this attribute to them)
 
 
+
                         //now compose federated URI for a federated class
                         //use the shortest length class name from merged classes
-                        int indexOfLastSlash01 = mergedClassPair.ObjectName1.LastIndexOf('/');
-                        string o1ClassName = mergedClassPair.ObjectName1.Substring(indexOfLastSlash01 + 1,
-                                                                                mergedClassPair.ObjectName1.Length - 1 - indexOfLastSlash01);
-                        int indexOfLastSlash02 = mergedClassPair.ObjectName2.LastIndexOf('/');
-                        string o2ClassName = mergedClassPair.ObjectName2.Substring(indexOfLastSlash02 + 1,
-                                                                                mergedClassPair.ObjectName2.Length - 1 - indexOfLastSlash02);
+                        string o1ClassName = GetClassNameFromUri(mergedClassPair.ObjectName1);
+                        string o2ClassName = GetClassNameFromUri(mergedClassPair.ObjectName2);
 
                         string federatedClassName = federatedNamesGen.GenerateFederatedName(o1ClassName, o2ClassName);
 
                         string federatedUri = federatedStem + federatedClassName;
                         mergedClassPair.FederatedURI = federatedUri;
-                        
-                        
-                        if(canWeMergeClassPairCallback != null)
+
+                        string fed = GetClassNameFromUri(mergedClassPair.ObjectName1);
+
+
+                        if (canWeMergeClassPairCallback != null)
                         {
                             if(!canWeMergeClassPairCallback(mergedClassPair))
                             {
@@ -350,7 +349,7 @@ namespace MappingGenerator
                                         throw new InvalidOperationException($"Property can have only one rdfs:range defined! [Properties {mergePropertyPair.ObjectName1} & {mergePropertyPair.ObjectName2} ]");
                                     if (prop01Range.Count != prop02Range.Count)
                                         throw new InvalidOperationException($"Properties should both have 1 (or zero) range(s) defined [Properties {mergePropertyPair.ObjectName1} & {mergePropertyPair.ObjectName2} ]");
-                                    //howerver, props are allowed to not have range defined
+                                    //however, props are allowed to not have range defined
 
                                     string prop01RangeStr = (prop01Range.First() as Triple).Object.ToString();
                                     string prop02RangeStr = (prop02Range.First() as Triple).Object.ToString();
@@ -359,6 +358,7 @@ namespace MappingGenerator
                                     //check, if prop01RangeStr OR prop02RangeStr not to be a resource (otherwise, it's a range of an object property,
                                     //and, if ranges of different ObjectProperties don't coincide, we can't merge them, so, delete current federatedProperty
                                     Regex r = new Regex(@"http\w{0,1}://.+");
+                                    SimilarClassPropertyDescription mergedClasses = null; //in case we merge resource ranges and need a federated range (case 2)
                                     if(r.IsMatch(prop01RangeStr) || r.IsMatch(prop02RangeStr))
                                     {
                                         //check that prop01RangeStr==prop02RangeStr
@@ -371,17 +371,32 @@ namespace MappingGenerator
                                             OntologyResource ontologyPropertyResource = _merged.CreateOntologyResource(new Uri(OntologyHelper.OwlObjectProperty));
                                             federatedProperty.AddType(ontologyPropertyResource);
                                         }
-                                        else if(mergedClassPairs.FirstOrDefault(simClassProp=> {
+                                        else if((mergedClasses = mergedClassPairs.FirstOrDefault(simClassProp=> {
                                             return (simClassProp.ObjectName1 == prop01RangeStr &&
                                                    simClassProp.ObjectName2 == prop02RangeStr) ||
                                                    (simClassProp.ObjectName1 == prop02RangeStr &&
                                                    simClassProp.ObjectName2 == prop01RangeStr);
-                                            })!=null) //we've found merge pair which states that classes, correspoinding to prop01RangeStr & prop02RangeStr are being merged
+                                            }))!=null) //we've found merge pair which states that classes, correspoinding to prop01RangeStr & prop02RangeStr are being merged
                                         {
                                             //if ranges' URIs correspond to classes which are being merged, than we CREATE an ObjectProperty with several ranges
                                             federatedProperty.AddRange(new Uri(prop01RangeStr));
                                             federatedProperty.AddRange(new Uri(prop02RangeStr));
                                             federatedProperty.AddDomain(new Uri(mergedClassPair.FederatedURI));
+                                            //add here FEDERATED range too
+                                            //get federated class name -> superclass of these 2 given merged classes
+                                            if(string.IsNullOrEmpty(mergedClasses.FederatedURI)) //if classes have not been merged yet
+                                            {
+                                                //fragment copied from above [when merging classes]
+                                                o1ClassName = GetClassNameFromUri(mergedClasses.ObjectName1);
+                                                o2ClassName = GetClassNameFromUri(mergedClasses.ObjectName2);
+
+                                                federatedClassName = federatedNamesGen.GenerateFederatedName(o1ClassName, o2ClassName);
+
+                                                federatedUri = federatedStem + federatedClassName;
+                                                mergedClasses.FederatedURI = federatedUri;
+                                            }
+                                            federatedProperty.AddRange(new Uri(mergedClasses.FederatedURI));
+
                                             OntologyResource ontologyPropertyResource = _merged.CreateOntologyResource(new Uri(OntologyHelper.OwlObjectProperty));
                                             federatedProperty.AddType(ontologyPropertyResource);
                                         }
@@ -418,6 +433,15 @@ namespace MappingGenerator
                 else continue; //didn't pass through threshold
             }
             _merged.SaveToFile("mergedOntology.log.owl");
+        }
+
+        private string GetClassNameFromUri(string objectName)
+        {
+            int indexOfLastSlash01 = objectName.LastIndexOf('/');
+            string oClassName = objectName.Substring(indexOfLastSlash01 + 1,
+                                                                    objectName.Length - 1 - indexOfLastSlash01);
+
+            return oClassName;
         }
     }
 }
