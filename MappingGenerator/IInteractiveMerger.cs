@@ -14,6 +14,7 @@ namespace MappingGenerator
                                   double mergePropertiesThreshold,
                                   IFederatedNamesGenerator federatedNamesGen,
                                   ITypeCaster typeCaster,
+                                  IProgress<double> progress=null,
                                   string federatedStem = null
                                   );
     }

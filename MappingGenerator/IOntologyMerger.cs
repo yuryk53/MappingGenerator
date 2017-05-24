@@ -41,9 +41,9 @@ namespace MappingGenerator
         /// </summary>
         /// <param name="threshold">Minimal similarity threshold</param>
         /// <returns>Description for each OWL class\property title</returns>
-        Dictionary<string, List<SimilarClassPropertyDescription>> GetSimilarOntologyClassesMatrix(bool includeProperties = true);
-        Dictionary<string, List<SimilarClassPropertyDescription>> GetSimilarClassPropertiesMatrix(string classUri1, string classUri2);
-        IGraph MergeTwoOntologies(IGraph o1, IGraph o2, double classThreshold, double propertyThreshold);
+        Dictionary<string, List<SimilarClassPropertyDescription>> GetSimilarOntologyClassesMatrix(bool includeProperties = true, IProgress<double> progress = null);
+        Dictionary<string, List<SimilarClassPropertyDescription>> GetSimilarClassPropertiesMatrix(string classUri1, string classUri2, IProgress<double> progress = null);
+        IGraph MergeTwoOntologies(IGraph o1, IGraph o2, double classThreshold, double propertyThreshold, IProgress<double> progress = null);
         void Initialize(OntologyGraph o1, OntologyGraph o2);
     }
 }

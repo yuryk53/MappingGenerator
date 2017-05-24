@@ -16,16 +16,16 @@ namespace MappingGenerator
     {
         static void Main(string[] args)
         {
-            //DBSemanticsGenerator generator = new DBSemanticsGenerator(@"Data Source=ASUS\SQLEXPRESS;Initial Catalog=LMS;Integrated Security=True");
-            //generator.GenerateOntologyFromDB("LMS", "xmlns: lms =\"http://www.example.org/LMS/\"", "LMS.owl");
+            //DBSemanticsGenerator generator = new DBSemanticsGenerator(@"Data Source=ASUS\SQLEXPRESS;Initial Catalog=LMSv1;Integrated Security=True");
+            //generator.GenerateOntologyFromDB("LMSv1", "xmlns: lms =\"http://www.example.org/LMS/\"", "LMSv1.owl");
             OntologyGraph gLMS = new OntologyGraph();
-            gLMS.LoadFromFile("LMS.owl");
+            gLMS.LoadFromFile("LMSv1.owl");
             //gLMS.SaveToFile("LMS_dotNetRdf.owl");
 
-            //generator = new DBSemanticsGenerator(@"Data Source=ASUS\SQLEXPRESS;Initial Catalog=KMS;Integrated Security=True");
-            //generator.GenerateOntologyFromDB("KMS", "xmlns: kms =\"http://www.example.org/KMS/\"", "KMS.owl");
+            //generator = new DBSemanticsGenerator(@"Data Source=ASUS\SQLEXPRESS;Initial Catalog=KMSv1;Integrated Security=True");
+            //generator.GenerateOntologyFromDB("KMSv1", "xmlns: kms =\"http://www.example.org/KMS/\"", "KMSv1.owl");
             OntologyGraph gKMS = new OntologyGraph();
-            gKMS.LoadFromFile("KMS.owl");
+            gKMS.LoadFromFile("KMSv1.owl");
             //gLMS.SaveToFile("KMS_dotNetRdf.owl");
 
             TryMergeOntologies(gLMS, gKMS);

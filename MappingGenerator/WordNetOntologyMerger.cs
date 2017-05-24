@@ -26,7 +26,7 @@ namespace MappingGenerator
             semsim = new SentenceSimilarity();
         }
 
-        public Dictionary<string, List<SimilarClassPropertyDescription>> GetSimilarClassPropertiesMatrix(string classUri1, string classUri2)
+        public Dictionary<string, List<SimilarClassPropertyDescription>> GetSimilarClassPropertiesMatrix(string classUri1, string classUri2, IProgress<double> progress=null)
         {
 
             OntologyClass classOfClasses1 = _o1.CreateOntologyClass(_o1.CreateUriNode("owl:Class"));
@@ -48,6 +48,12 @@ namespace MappingGenerator
                 {
                     string propName2 = (classProps_j[n] as Triple).Subject.ToString().Split('#')[1];
                     propsSimilarityMatrix[m][n] = GetWordNetSimilarityScore(propName1, propName2);
+
+                    if (progress != null)
+                    {
+                        double progressValue = (m * classProps_j.Count + (n + 1)) / (double)(classProps_i.Count * classProps_j.Count);    //from 0 to 1
+                        progress.Report(progressValue);
+                    }
                 }
             }
 
@@ -77,7 +83,7 @@ namespace MappingGenerator
             return simDict;
         }
 
-        public Dictionary<string, List<SimilarClassPropertyDescription>> GetSimilarOntologyClassesMatrix(bool includeProperties = true)
+        public Dictionary<string, List<SimilarClassPropertyDescription>> GetSimilarOntologyClassesMatrix(bool includeProperties = true, IProgress<double> progress=null)
         {
             OntologyClass classOfClasses1 = _o1.CreateOntologyClass(_o1.CreateUriNode("owl:Class"));
             OntologyClass classOfClasses2 = _o2.CreateOntologyClass(_o2.CreateUriNode("owl:Class"));
@@ -88,6 +94,7 @@ namespace MappingGenerator
             //create similarity matrix
             double[,] similarityMatrix = new double[classesO1.Count, classesO2.Count];
 
+            double stepProgressDelta = 1.0 / similarityMatrix.GetLength(1); //progress Delta for one step of 'j' variable
             for (int i = 0; i < similarityMatrix.GetLength(0); i++)
             {
                 for (int j = 0; j < similarityMatrix.GetLength(1); j++)
@@ -112,6 +119,14 @@ namespace MappingGenerator
                             {
                                 string propName2 = (classProps_j[n] as Triple).Subject.ToString().Split('#')[1];
                                 propsSimilarityMatrix[m][n] = GetWordNetSimilarityScore(propName1, propName2);
+
+                                if (progress != null)
+                                {
+                                    double classLoopProgressValue = (i * similarityMatrix.GetLength(0) + (j + 1)) / (double)(similarityMatrix.Length);    //from 0 to 1
+                                    double propertyLoopProgressValue = ((m * classProps_j.Count + (j + 1)) / (double)(classProps_i.Count+ classProps_j.Count))*stepProgressDelta;    //from 0 to stepProgressDelta -> normalized
+                                    double progressValue = classLoopProgressValue - stepProgressDelta + propertyLoopProgressValue;
+                                    progress.Report(progressValue);
+                                }
                             }
                         }
 
@@ -125,6 +140,12 @@ namespace MappingGenerator
                     else
                     {
                         similarityMatrix[i, j] = score;
+
+                        if(progress!= null)
+                        {
+                            double progressValue = (i * similarityMatrix.GetLength(0) + (j + 1)) / (double)(similarityMatrix.Length);    //from 0 to 1
+                            progress.Report(progressValue);
+                        }
                     }
                 }
             }
@@ -186,8 +207,9 @@ namespace MappingGenerator
             }
         }
 
-        public IGraph MergeTwoOntologies(IGraph o1, IGraph o2, double classThreshold, double propertyThreshold)
+        public IGraph MergeTwoOntologies(IGraph o1, IGraph o2, double classThreshold, double propertyThreshold, IProgress<double> progress=null)
         {
+            Initialize(o1 as OntologyGraph, o2 as OntologyGraph);
             Dictionary<string, List<SimilarClassPropertyDescription>> simDict = GetSimilarOntologyClassesMatrix();
             List<SimilarClassPropertyDescription> similarClasses = new List<SimilarClassPropertyDescription>();
             foreach (var key in simDict.Keys)
@@ -205,7 +227,8 @@ namespace MappingGenerator
                 propPair => propPair.SimilarityScore >= propertyThreshold,   //no user interaction here
                 0.6,
                 new ShortestFederatedNamesGenerator(),
-                new XSDTypeCaster());
+                new XSDTypeCaster(),
+                progress);
 
             return _merged;
         }
@@ -227,6 +250,7 @@ namespace MappingGenerator
                                                      double mergePropertiesThreshold,
                                                      IFederatedNamesGenerator federatedNamesGen,
                                                      ITypeCaster typeCaster,
+                                                     IProgress<double> progress=null,
                                                      string federatedStem=null)
         {
             if(federatedStem == null)
@@ -234,8 +258,11 @@ namespace MappingGenerator
                 federatedStem = ConfigurationManager.AppSettings["defaultFederatedStem"];
             }
 
+            int mergedClassPairNumber = 0;
+            double classPairProgressStepDelta = 1.0 / mergedClassPairs.Count;
             foreach(SimilarClassPropertyDescription mergedClassPair in mergedClassPairs)
             {
+                mergedClassPairNumber++;
                 mergedClassPair.MergeClassRelation = MergeClassRelation.SubClassOf; //by default, howerver, using callback user can change this
                 if (mergedClassPair.SimilarityScore >= mergePropertiesThreshold)
                 {
@@ -287,9 +314,22 @@ namespace MappingGenerator
                         //before merging, ask a user using callback if he wants to merge the particular props
                         string class1 = mergedClassPair.ObjectName1;
                         string class2 = mergedClassPair.ObjectName2;
+                        Progress<double> getClassPropsMatrixProgress = null;
+
+                        if (progress != null)   //report progress
+                        {
+                            new Progress<double>(pValue =>
+                            {
+                                //take into account main loop progress
+                                double progressValue = (mergedClassPairNumber / (double)mergedClassPairs.Count) - classPairProgressStepDelta + pValue * classPairProgressStepDelta;
+                                progress.Report(progressValue);
+                            });
+                        }
+
                         Dictionary<string, List<SimilarClassPropertyDescription>> simDict = GetSimilarClassPropertiesMatrix(
                             classUri1: class1,
-                            classUri2: class2); //obtain properties similarity matrix
+                            classUri2: class2,
+                            progress: getClassPropsMatrixProgress); //obtain properties similarity matrix
 
                         List<SimilarClassPropertyDescription> highestScoreMergePairs = new List<SimilarClassPropertyDescription>();
                         foreach(var key in simDict.Keys)
