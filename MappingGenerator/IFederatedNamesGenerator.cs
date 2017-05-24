@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MappingGenerator
 {
-    interface IFederatedNamesGenerator
+    public interface IFederatedNamesGenerator
     {
         string GenerateFederatedName(string title1, string title2);
     }

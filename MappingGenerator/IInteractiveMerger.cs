@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MappingGenerator
 {
-    interface IInteractiveMerger
+    public interface IInteractiveMerger
     {
         void MergeOntologyClasses(List<SimilarClassPropertyDescription> mergedClassPairs, 
                                   Func<SimilarClassPropertyDescription, bool> canWeMergePairCallback,

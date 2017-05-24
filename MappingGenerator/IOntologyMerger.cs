@@ -34,7 +34,7 @@ namespace MappingGenerator
         public MergeClassRelation MergeClassRelation { get; set; } = MergeClassRelation.NotApplicable;
     }
 
-    interface IOntologyMerger
+    public interface IOntologyMerger
     {
         /// <summary>
         /// Gets similar classes from two ontologies
