@@ -247,14 +247,14 @@ namespace MappingGenerator
             return score;
         }
 
-        void IInteractiveMerger.MergeOntologyClasses(List<SimilarClassPropertyDescription> mergedClassPairs, 
+        IGraph IInteractiveMerger.MergeOntologyClasses(List<SimilarClassPropertyDescription> mergedClassPairs, 
                                                      Func<SimilarClassPropertyDescription, bool> canWeMergeClassPairCallback,
                                                      Func<SimilarClassPropertyDescription, bool> canWeMergePropertyPairCallback, 
                                                      double mergePropertiesThreshold,
                                                      IFederatedNamesGenerator federatedNamesGen,
                                                      ITypeCaster typeCaster,
                                                      IProgress<double> progress=null,
-                                                     Func<string, string, IProgress<double>, Dictionary<string, List<SimilarClassPropertyDescription>>> getSimilarClassPropertiesMatrixMethod=null,
+                                                     Func<string, string, IProgress<double>, Dictionary<string, List<SimilarClassPropertyDescription>>> getSimilarClassPropertiesMatrixMethod = null,
                                                      string federatedStem=null)
         {
             if(federatedStem == null)
@@ -262,9 +262,9 @@ namespace MappingGenerator
                 federatedStem = ConfigurationManager.AppSettings["defaultFederatedStem"];
             }
 
-            if(getSimilarClassPropertiesMatrixMethod==null) //user didn't provide his own method -> use default one
+            if (getSimilarClassPropertiesMatrixMethod == null) //user didn't provide his own method -> use default one
             {
-                getSimilarClassPropertiesMatrixMethod = new Func<string,string, IProgress<double>, Dictionary<string, List<SimilarClassPropertyDescription>>>
+                getSimilarClassPropertiesMatrixMethod = new Func<string, string, IProgress<double>, Dictionary<string, List<SimilarClassPropertyDescription>>>
                                                                 (GetSimilarClassPropertiesMatrix);
             }
 
@@ -491,6 +491,7 @@ namespace MappingGenerator
                 else continue; //didn't pass through threshold
             }
             _merged.SaveToFile("mergedOntology.log.owl");
+            return _merged;
         }
 
         private string GetClassNameFromUri(string objectName)
