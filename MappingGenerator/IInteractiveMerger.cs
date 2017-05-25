@@ -15,7 +15,7 @@ namespace MappingGenerator
                                   IFederatedNamesGenerator federatedNamesGen,
                                   ITypeCaster typeCaster,
                                   IProgress<double> progress=null,
-                                  Func<Dictionary<string, List<SimilarClassPropertyDescription>>> getSimilarClassPropertiesMatrixMethod = null,
+                                  Func<string, string, IProgress<double>, Dictionary<string, List<SimilarClassPropertyDescription>>> getSimilarClassPropertiesMatrixMethod = null,
                                   string federatedStem = null
                                   );
     }
