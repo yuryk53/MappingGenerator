@@ -67,7 +67,7 @@ namespace MappingGenerator
                 //look for typeName2 in array of compatible types for typeName1
                 if (typeCastTable[typeName1].Contains(typeName2, new StringInvariantEqualityComparer()))
                 {
-                    string biggerTypeName = typeCastTable[typeName1].First(s2 => s2.ToLower().CompareTo(typeName2) == 0);
+                    string biggerTypeName = typeCastTable[typeName1].FirstOrDefault(s2 => s2.CompareTo(typeName2) == 0);
                     if (biggerTypeName == null || biggerTypeName.Length == 0)
                         throw new Exception("Something unexpected happened in XSDTypeCaster.CastTypes(string,string)");
                     else
