@@ -94,7 +94,7 @@ namespace MappingGenerator
             //create similarity matrix
             double[,] similarityMatrix = new double[classesO1.Count, classesO2.Count];
 
-            double stepProgressDelta = 1.0 / similarityMatrix.GetLength(1); //progress Delta for one step of 'j' variable
+            double stepProgressDelta = 1.0 / similarityMatrix.Length; //progress Delta for one step of 'j' variable
             for (int i = 0; i < similarityMatrix.GetLength(0); i++)
             {
                 for (int j = 0; j < similarityMatrix.GetLength(1); j++)
@@ -123,7 +123,7 @@ namespace MappingGenerator
                                 if (progress != null)
                                 {
                                     double classLoopProgressValue = (i * similarityMatrix.GetLength(0) + (j + 1)) / (double)(similarityMatrix.Length);    //from 0 to 1
-                                    double propertyLoopProgressValue = ((m * classProps_j.Count + (j + 1)) / (double)(classProps_i.Count+ classProps_j.Count))*stepProgressDelta;    //from 0 to stepProgressDelta -> normalized
+                                    double propertyLoopProgressValue = ((m * classProps_j.Count + (n + 1)) / (double)(classProps_i.Count*classProps_j.Count))*stepProgressDelta;    //from 0 to stepProgressDelta -> normalized
                                     double progressValue = classLoopProgressValue - stepProgressDelta + propertyLoopProgressValue;
                                     progress.Report(progressValue);
                                 }
@@ -209,15 +209,18 @@ namespace MappingGenerator
 
         public IGraph MergeTwoOntologies(IGraph o1, IGraph o2, double classThreshold, double propertyThreshold, IProgress<double> progress=null)
         {
-            Initialize(o1 as OntologyGraph, o2 as OntologyGraph);
-            Dictionary<string, List<SimilarClassPropertyDescription>> simDict = GetSimilarOntologyClassesMatrix();
+            _merged = new OntologyGraph();
+            _merged.Merge(o1);
+            _merged.Merge(o2);
+
+            Dictionary<string, List<SimilarClassPropertyDescription>> simDict = GetSimilarOntologyClassesMatrix(includeProperties:true, progress: progress);
             List<SimilarClassPropertyDescription> similarClasses = new List<SimilarClassPropertyDescription>();
             foreach (var key in simDict.Keys)
             {
                 SimilarClassPropertyDescription map = (from mapping
                                                        in simDict[key]
                                                        where mapping.SimilarityScore == simDict[key].Max(x => x.SimilarityScore)
-                                                       select mapping).First();
+                                                       select mapping).First(); //select pairs with highest similarity score
                 similarClasses.Add(map);
             }
 
@@ -225,7 +228,7 @@ namespace MappingGenerator
                 similarClasses,
                 simPair => simPair.SimilarityScore >= classThreshold,        //no user interaction here
                 propPair => propPair.SimilarityScore >= propertyThreshold,   //no user interaction here
-                0.6,
+                propertyThreshold,
                 new ShortestFederatedNamesGenerator(),
                 new XSDTypeCaster(),
                 progress);
@@ -251,11 +254,18 @@ namespace MappingGenerator
                                                      IFederatedNamesGenerator federatedNamesGen,
                                                      ITypeCaster typeCaster,
                                                      IProgress<double> progress=null,
+                                                     Func<string, string, IProgress<double>, Dictionary<string, List<SimilarClassPropertyDescription>>> getSimilarClassPropertiesMatrixMethod=null,
                                                      string federatedStem=null)
         {
             if(federatedStem == null)
             {
                 federatedStem = ConfigurationManager.AppSettings["defaultFederatedStem"];
+            }
+
+            if(getSimilarClassPropertiesMatrixMethod==null) //user didn't provide his own method -> use default one
+            {
+                getSimilarClassPropertiesMatrixMethod = new Func<string,string, IProgress<double>, Dictionary<string, List<SimilarClassPropertyDescription>>>
+                                                                (GetSimilarClassPropertiesMatrix);
             }
 
             int mergedClassPairNumber = 0;
@@ -318,7 +328,7 @@ namespace MappingGenerator
 
                         if (progress != null)   //report progress
                         {
-                            new Progress<double>(pValue =>
+                            getClassPropsMatrixProgress = new Progress<double>(pValue =>
                             {
                                 //take into account main loop progress
                                 double progressValue = (mergedClassPairNumber / (double)mergedClassPairs.Count) - classPairProgressStepDelta + pValue * classPairProgressStepDelta;
@@ -326,10 +336,17 @@ namespace MappingGenerator
                             });
                         }
 
-                        Dictionary<string, List<SimilarClassPropertyDescription>> simDict = GetSimilarClassPropertiesMatrix(
-                            classUri1: class1,
-                            classUri2: class2,
-                            progress: getClassPropsMatrixProgress); //obtain properties similarity matrix
+                        #region Merge properties for selected classes
+                        //Dictionary<string, List<SimilarClassPropertyDescription>> simDict = GetSimilarClassPropertiesMatrix(
+                        //    classUri1: class1,
+                        //    classUri2: class2,
+                        //    progress: getClassPropsMatrixProgress); //obtain properties similarity matrix
+
+                        Dictionary<string, List<SimilarClassPropertyDescription>> simDict = getSimilarClassPropertiesMatrixMethod(
+                            class1, //classUri1
+                            class2, //classUri2
+                            getClassPropsMatrixProgress //progress
+                        ); //obtain properties similarity matrix
 
                         List<SimilarClassPropertyDescription> highestScoreMergePairs = new List<SimilarClassPropertyDescription>();
                         foreach(var key in simDict.Keys)
@@ -439,6 +456,7 @@ namespace MappingGenerator
 
                                             OntologyResource ontologyPropertyResource = _merged.CreateOntologyResource(new Uri(OntologyHelper.OwlObjectProperty));
                                             federatedProperty.AddType(ontologyPropertyResource);
+                                            
                                         }
                                         else
                                         {
@@ -463,7 +481,7 @@ namespace MappingGenerator
                                 }
                             }
                         }
-                        
+                        #endregion
                     }
                     else
                     {
