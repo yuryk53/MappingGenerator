@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VDS.RDF;
 
 namespace MappingGenerator
 {
     public interface IInteractiveMerger
     {
-        void MergeOntologyClasses(List<SimilarClassPropertyDescription> mergedClassPairs, 
+        IGraph MergeOntologyClasses(List<SimilarClassPropertyDescription> mergedClassPairs, 
                                   Func<SimilarClassPropertyDescription, bool> canWeMergePairCallback,
                                   Func<SimilarClassPropertyDescription, bool> canWeMergePropertyPairCallback,
                                   double mergePropertiesThreshold,
