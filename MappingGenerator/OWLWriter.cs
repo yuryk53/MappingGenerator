@@ -53,10 +53,10 @@ namespace MappingGenerator
         {
             if (MatchUri(rdfAboutUri))
             {
-                sb.AppendLine($"<owl:DataTypeProperty rdf:about=\"{rdfAboutUri}\">");
+                sb.AppendLine($"<owl:DatatypeProperty rdf:about=\"{rdfAboutUri}\">");
                 sb.AppendLine($"\t<rdfs:domain rdf:resource=\"{domainResourceUri}\" />");
                 sb.AppendLine($"\t<rdfs:range rdf:resource=\"xsd:{rangeXSDType}\" />");
-                sb.AppendLine("</owl:DataTypeProperty>");
+                sb.AppendLine("</owl:DatatypeProperty>");
             }
             else throw new ArgumentException("Invalid rdf:about URI!");
         }
