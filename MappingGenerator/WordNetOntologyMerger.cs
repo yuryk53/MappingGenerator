@@ -461,6 +461,7 @@ namespace MappingGenerator
                                         else
                                         {
                                             //ranges of different ObjectProperties don't coincide, we can't merge them, so, don't add current federatedProperty to graph
+                                            //federated schema should reference federated schema, otherwise it's a logical error!
                                             continue;
                                         }
                                     }
