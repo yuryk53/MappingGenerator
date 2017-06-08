@@ -1,4 +1,22 @@
-﻿using System;
+﻿/* 
+Copyright © 2017 Yurii Bilyk. All rights reserved. Contacts: <yuryk531@gmail.com>
+
+This file is part of "Database integrator".
+
+"Database integrator" is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+"Database integrator" is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with "Database integrator".  If not, see <http:www.gnu.org/licenses/>. 
+*/
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
@@ -14,11 +32,11 @@ namespace MappingGenerator
 {
     public class WordNetOntologyMerger : IOntologyMerger, IInteractiveMerger
     {
-        private OntologyGraph _merged = null;
-        private OntologyGraph _o1, _o2;
-        private SentenceSimilarity semsim;
+        protected OntologyGraph _merged = null;
+        protected OntologyGraph _o1, _o2;
+        protected SentenceSimilarity semsim;
 
-        private object semaphore = new object();
+        protected object semaphore = new object();
 
         public WordNetOntologyMerger()
         {
@@ -236,7 +254,7 @@ namespace MappingGenerator
             return _merged;
         }
 
-        private double GetWordNetSimilarityScore(string word1, string word2)
+        protected double GetWordNetSimilarityScore(string word1, string word2)
         {
             float score = 0;
 
@@ -495,7 +513,7 @@ namespace MappingGenerator
             return _merged;
         }
 
-        private string GetClassNameFromUri(string objectName)
+        protected string GetClassNameFromUri(string objectName)
         {
             int indexOfLastSlash01 = objectName.LastIndexOf('/');
             string oClassName = objectName.Substring(indexOfLastSlash01 + 1,
