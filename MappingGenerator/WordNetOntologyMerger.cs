@@ -441,7 +441,8 @@ namespace MappingGenerator
                                         {
                                             //OK->federated Range is equal to prop01RangeStr\prop02RangeStr
                                             castedRange = prop01RangeStr;
-                                            federatedProperty.AddRange(new Uri($"xsd:{castedRange}"));
+                                            //federatedProperty.AddRange(new Uri($"xsd:{castedRange}")); -> BUG
+                                            federatedProperty.AddRange(new Uri(castedRange));
                                             federatedProperty.AddDomain(new Uri(mergedClassPair.FederatedURI));
                                             OntologyResource ontologyPropertyResource = _merged.CreateOntologyResource(new Uri(OntologyHelper.OwlObjectProperty));
                                             federatedProperty.AddType(ontologyPropertyResource);
@@ -485,6 +486,7 @@ namespace MappingGenerator
                                     }
                                     else
                                     {
+                                        //ranges should be XSD!, because we're using XSDTypeCaster by default
                                         castedRange = typeCaster.CastTypes(prop01RangeStr, prop02RangeStr);
                                         federatedProperty.AddRange(new Uri($"xsd:{castedRange}"));
                                         federatedProperty.AddDomain(new Uri(mergedClassPair.FederatedURI));
